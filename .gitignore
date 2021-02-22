@@ -124,8 +124,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Environment Variables
-main/.env
-
-#TODO List
+# TODO List
 ToDo.txt
+
+#Log file
+discord.log

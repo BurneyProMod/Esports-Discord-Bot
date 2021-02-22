@@ -8,7 +8,7 @@ class Esports(commands.Cog):
     
     #TODO: The message skips the '@everyone' role due to everyone getting pinged when it's called. Find a way to stop this message from doing so. 
 
-    @commands.command(name='GetRoles', description='Returns the list of all roles in this server.')
+    @commands.command(name='GetRoles', help='Returns the list of all roles in this server.')
     @commands.guild_only()
     async def GetRoles(self, ctx):
         # Make a variable for the string since ctx.send() can only accept 1 variable. 
