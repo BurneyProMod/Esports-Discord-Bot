@@ -1,9 +1,11 @@
 import discord
 import datetime
-from discord.ext import commands
 
+from discord.ext import commands, tasks
 
 class Esports(commands.Cog):
+
+    client = discord.Client()
 
     #Dictionaries to help with input validation
     #TODO: There has got to be a better way to do this. 
@@ -13,6 +15,7 @@ class Esports(commands.Cog):
         self.bot = bot
         self.teamName = 'None'
         self.practiceSchedule = []
+        self.notifyUsers = []
 
     #TODO: The message skips the '@everyone' role due to everyone getting pinged when it's called. Find a way to stop this message from doing so. 
 
@@ -48,21 +51,23 @@ class Esports(commands.Cog):
         if(self.teamName == 'None'):
             await ctx.send("There is no Team Name set. Set one with the >teamname command!")
         else:
-            str = 'The current teamname is' + self.TeamName
-            await ctx.send(str)
+            printString = 'The current teamname is' + self.TeamName
+            await ctx.send(printString)
 
-    @commands.command(name='practice', help='Sets a practice time. Format: >practice dd/mm/yy 00:00am')
+    @commands.command(name='practice', help='Sets a practice time. Format: >practice mm/dd/yy 00:00am')
     @commands.guild_only()
     async def Practice(self, ctx, practiceDay, practiceTime: str):
         if (self.teamName == 'None'):
             await ctx.send('A Team has not been assigned. Please use the >Teamname command to set one.')
         else:
-            day,month,year = practiceDay.split('/')
+            month,day,year = practiceDay.split('/')
             try:
                 datetime.datetime(int(year),int(month),int(day))    
                 if(practiceTime in self.timeofday):
                     self.practiceSchedule.append(practiceDay + ' at ' + practiceTime)
-                    await ctx.send('Schedule successfully updated!')
+                    self.practiceSchedule.sort()
+                    printString = 'New practice time set ' + practiceDay + ' at ' + practiceTime
+                    await ctx.send(printString)
             except ValueError:
                 print("practice Date: " + day + ' ' + month + ' ' + year)
                 print("Pracitce Time: " + practiceTime)
@@ -74,11 +79,60 @@ class Esports(commands.Cog):
         if not self.practiceSchedule:
             await ctx.send("Nothing currently scheduled.")
         else:
-            str = ""
+            printString = ""
             for i in self.practiceSchedule:
-                str += i
-                str += '\n'
-            await ctx.send(str)
+                printString += i
+                printString += '\n'
+            await ctx.send(printString)
+
+    @commands.command(name='notifyme', help='The bot will ping whoever uses this command X hours before the next scheduled event. Format: >!notifyme xx')
+    @commands.guild_only()
+    async def notifyme(self, ctx):
+        senderID = ctx.author.id
+        try:
+            if senderID in self.notifyUsers:
+                await ctx.send("You are already in the ping group")
+            self.notifyUsers.append(senderID)
+            print("User successfully added to ping group")
+            await ctx.send("Successfully added to ping group. Use command >unnotify to stop")
+        except KeyError:
+            print("KeyError for notify command")
+
+    @commands.command(name='unnotifyme', help='The bot will no longer ping you reminders for practice')
+    @commands.guild_only()
+    async def unnotifyme(self, ctx):
+        senderID = ctx.author.id
+        try:
+            if senderID not in self.notifyUsers:
+                await ctx.send("You are not in the ping group")
+            self.notifyUsers.remove(senderID)
+            await ctx.send("Successfully removed from ping group")
+        except KeyError:
+            print("KeyError for unnotify command")
+
+    @commands.command(name='notifylist', help='Prints list of users that have reminders enabled for the schedule')
+    @commands.guild_only()
+    async def notifylist(self, ctx):
+        print("Current List: ")
+        for x in range(len(self.notifyUsers)): 
+            print(self.notifyUsers[x])
+        print()
+        if not self.notifyUsers:
+            await ctx.send("The notify list is empty.")
+            return
+        printString = ""
+        for i in self.notifyUsers:
+            # TODO: I can't convert the id to a string username without mentioning all the users. Please send help. 
+            print("Current list element is " + str(i))
+            user = discord.Object(int(i))
+            print("user = discord.Object(int(i)): " + str(user))
+            user.display_name = f"<@{user.id}>"
+            print("user.display_name = " + str(user.display_name))
+            printString += str(user.display_name)
+            print("printString updated")
+            printString += '\n'
+        printString = discord.utils.escape_mentions(printString)
+        await ctx.send(printString)
 
 def setup(bot):
     bot.add_cog(Esports(bot))
